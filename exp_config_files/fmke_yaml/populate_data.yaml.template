@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: populate-data-for-riakkv
+  labels:
+    app: fmke_pop
+spec:
+  template:
+    spec:
+      containers:
+      - name: fmke-pop
+        image: ntlinh/fmke_pop:latest
+        imagePullPolicy: IfNotPresent
+        args:
+      restartPolicy: Never
+  backoffLimit: 10

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: riakkv-exposer
+  labels:
+    app: riakkv
+    type: exposer-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8087
+    name: riakkv-pb
+  - port: 8097
+    name: riakkv-http
+  selector:
+    app: riakkv
+    statefulset.kubernetes.io/pod-name: riakkv-0

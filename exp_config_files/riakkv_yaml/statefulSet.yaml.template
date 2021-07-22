@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: riakkv
+    type: riakkv-deployment
+  name: riakkv
+spec:
+  podManagementPolicy: Parallel
+  replicas: 3
+  selector:
+    matchLabels:
+      app: riakkv
+      type: instance
+  serviceName: riakkv
+  template:
+    metadata:
+      labels:
+        app: riakkv
+        type: instance
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: riakkv
+      containers:
+      - env:
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        image: ntlinh/riak_kv:2.2.6_debian
+        imagePullPolicy: IfNotPresent
+        #imagePullPolicy: Always
+        name: riakkv
+        ports:
+        - containerPort: 8087
+          name: riakkv-pb
+        - containerPort: 8098
+          name: riakkv-http
+        # startupProbe:
+        #   failureThreshold: 60
+        #   periodSeconds: 10
+        #   successThreshold: 1
+        #   tcpSocket:
+        #     port: riakkv-pb
+        volumeMounts:
+        - mountPath: /riakkv-data
+          name: riakkv-volume-claim
+      nodeSelector:
+        service_g5k: riakkv
+      terminationGracePeriodSeconds: 10
+  volumeClaimTemplates:
+  - metadata:
+      name: riakkv-volume-claim
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 150Gi
+      storageClassName: local-storage
