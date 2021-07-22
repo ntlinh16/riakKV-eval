@@ -1,7 +1,7 @@
 # Benchmarking the RiakKV cluster using FMKe on Grid5000 system
 This experiment performs the [FMKe benchmark](https://github.com/ntlinh16/FMKe) to test the performance of an RiakKV cluster which is deployed on Grid5000 system by using an experiment management tool, [cloudal](https://github.com/ntlinh16/cloudal/).
 
-If you do not install and configure all dependencies to use cloudal, please follow the [instruction](https://github.com/ntlinh16/cloudal#getting-started)
+If you do not install and configure all dependencies to use cloudal, please follow the [instruction](https://github.com/ntlinh16/cloudal)
 
 ## Introduction
 
@@ -15,9 +15,9 @@ The `run_exp_workflow()` function performs 6 steps of a run of this experiment s
 
 ## How to run the experiment
 
-### 1. Download the source code:
+### 1. Clone the repository:
 
-git clone the project from the git repo:
+Clone the project from the git repo:
 
 ```
 git clone https://github.com/ntlinh16/riakKV.git
@@ -26,19 +26,17 @@ git clone https://github.com/ntlinh16/riakKV.git
 There are two types of config files to perform this experiment.
 
 #### Setup environment config file
-This system config file provides three following information:
+You need to clarify all the following information in `exp_setting_riakkv_fmke_g5k.yaml` file:
 
-* Infrastructure requirements: includes the number of clusters, name of cluster and the number of nodes for each cluster you want to provision on Grid5k system; which OS you want to deploy on reserved nodes; when and how long you want to provision nodes; etc.
+* Infrastructure: the provided information in this part will be used to make a provisioning on nGrid5000 system. They include when and how long you want to provision nodes; the OS you want to deploy on reserved nodes.  The name of cluster and the number of nodes for each cluster you want to provision on Grid5k system will be declared in next part .
 
-* Parameters: is a list of experiment parameters that represent different aspects of the system that you want to examine. Each parameter contains a list of possible values of that aspect. For example, I want to examine the effect of the number of concurrent clients that connect to an RiakKV database, so I define a parameter such as `concurrent_clients: [16, 32]`; and each experiment will be repeated 5 times (`iteration: [1..5]`) for a statistically significant results.
+* Experiment Parameters: is a list of experiment parameters that represent different aspects of the system that you want to examine. Each parameter contains a list of possible values of that aspect. For example, I want to examine the effect of the number of concurrent clients that connect to an RiakKV database, so I define a parameter such as `concurrent_clients: [16, 32]`; and each experiment will be repeated 5 times (`iteration: [1..5]`) for a statistically significant results. And for different topologies of an RiakKV cluster I provide the number of nodes.
 
-* Experiment environment information: the path to experiment configuration files; the read/write ratio of the workload; the topology of an RiakKV cluster; etc.
+* Experiment environment information: the path to experiment configuration files, etc.
 
-You need to clarify all these information in `exp_setting_riakkv_fmke_g5k.yaml` file
+#### Experiment config files for Kubernetes
 
-#### Experiment config files 
-
-In this experiment, I am using Kubernetes deployment files to deploy and manage RiakKV cluster, Antidote monitoring services and FMKe benchmark. You need to provide these deployment files. I already provided the template files which work well with this experiment in folder [exp_config_files](https://github.com/ntlinh16/RiakKV-eval/tree/master/exp_config_files). If you do not require any special configurations, you do not have to modify these files.
+In this experiment, I use Kubernetes deployment files to deploy and manage RiakKV cluster, and FMKe benchmark. Therefore, you need to provide these deployment files. I already provided the template files which work well with this experiment in folder [exp_config_files](https://github.com/ntlinh16/riakKV-eval/tree/main/exp_config_files). If you do not require any special configurations, you do not have to modify these files.
 
 ### 3. Run the experiment
 If you are running this experiment on your local machine, remember to run the VPN to [connect to Grid5000 system from outside](https://github.com/ntlinh16/cloudal/blob/master/docs/g5k_k8s_setting.md).
@@ -61,7 +59,7 @@ Arguments:
 ### 4. Re-run the experiment
 If the script is interrupted by unexpected reasons. You can re-run the experiment and it will continue with the list of combinations left in the queue. You have to provide the same result directory of the previous one. There are two possible cases:
 
-1. If your reserved hosts are dead, you just run the same above command:
+1. If your reserved hosts on G5k are dead, you just run the same above command:
 ```
 cd ~/riakkv
 python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k &> result/test2.log
