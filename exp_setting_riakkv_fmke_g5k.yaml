@@ -37,16 +37,17 @@ parameters:
     dataset: standard
     # dataset: [small, medium, standard]
 
+    #### configuration of FMKe client
     # the number of concurrent processes of one FMKe client 
-    concurrent_clients: [16]
+    concurrent_clients: 40
     
-    ### configuration of topology for 1 DC
+    ### configuration of topology on 1 site (or Grid5k cluster)
     # the number of FMKe client nodes
-    n_fmke_client_per_site: [1]
+    n_fmke_client_per_dc: [0..3]
     # the number of FMKe application nodes
-    n_fmke_app_per_site: [1]
-    # the number of RiakKV nodes on each site
-    n_riakkv_per_site: 3
+    n_fmke_app_per_dc: [1,2]
+    # the number of AntidoteDB nodes
+    n_antidotedb_per_dc: 3
 
 #############################################
 #                                           #
@@ -55,10 +56,9 @@ parameters:
 #############################################
 exp_env:
     # the path to the results directory
-    results_dir: riakkv-eval/test
-    # the path to the kubernetes yaml template files to deploy RiakKV cluster
+    results_dir: riakkv-eval/results
+    # the path to the kubernetes yaml template files to deploy RiakKV cluster and the FMKe services
     riakkv_yaml_path: riakkv-eval/exp_config_files/riakkv_yaml
-    monitoring_yaml_path: riakkv-eval/exp_config_files/monitoring_yaml
     fmke_yaml_path: riakkv-eval/exp_config_files/fmke_yaml
 
     
@@ -66,15 +66,15 @@ exp_env:
     # the following is the default setting, the sum of these ratio must be 100(%)
     # This information replaces the corresponding values in the fmke_yaml/fmke_client.config.template file,the config file to run FMKe client
     operations:
-      get_pharmacy_prescriptions: 0
-      get_prescription_medication: 0
-      get_staff_prescriptions: 0
-      create_prescription: 100
-      get_processed_prescriptions: 0
-      get_patient: 0
-      update_prescription: 0
-      update_prescription_medication: 0
-      get_prescription: 0
+      get_pharmacy_prescriptions: 27
+      get_prescription_medication: 27
+      get_staff_prescriptions: 14
+      create_prescription: 8
+      get_processed_prescriptions: 7
+      get_patient: 5
+      update_prescription: 4
+      update_prescription_medication: 4
+      get_prescription: 4
 
     
     ### Information of kubernetes master and sites of RiakKV
