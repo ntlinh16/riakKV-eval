@@ -36,7 +36,6 @@ You need to clarify all the following information in `exp_setting_riakkv_fmke_g5
 
 * Experiment environment information: the path to experiment Kubernetes deployment files; the read/write ratio of the FMKe client workload; the topology of an RiakKV cluster.
 
-You need to clarify all these information in `exp_setting_riakkv_fmke_g5k.yaml` file
 #### Experiment deployment files for Kubernetes
 
 In this experiment, I use Kubernetes deployment files to deploy and manage RiakKV cluster, and FMKe benchmark. Therefore, you need to provide these deployment files. I already provided the template files which work well with this experiment in [exp_config_files](https://github.com/ntlinh16/riakKV-eval/tree/main/exp_config_files) folder. If you do not require any special configurations, you do not have to modify these files.
@@ -48,7 +47,7 @@ Then, run the following command:
 
 ```
 cd ~/riakkv
-python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k &>  results/test.log
+python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k &> results/test.log
 ```
 
 You can watch the log by:
@@ -64,28 +63,27 @@ If the script is interrupted by unexpected reasons. You can re-run the experimen
 
 1. If your reserved nodes on Grid5k are dead, you just run the same above command:
 ```
-cd ~/riakkv
 python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k &> results/test.log
 ```
 This command performs a new reservation and runs all the combinations left. Remember to check the `walltime` when re-running the experiments to avoid violence the charter of Grid5k.
 
 2. If your reserved nodes are still alive, you can give the OAR_JOB_IDs to the script:
 ```
-cd cloudal/examples/experiment/antidotedb_g5k/
 python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> results/test.log
 ```
 For example:
 ```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k --no-deploy-os -j grenoble:2086482,rennes:1837521 --kube-master ecotype-9.nantes.grid5000.fr &>> results/test.log
+python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k --no-deploy-os -j grenoble:2086482,rennes:1837521 --kube-master ecotype-9.nantes.grid5000.fr &>> results/test.log
 ```
 
 3. If your script is interrupted after the step `Deploying Kubernetes cluster`, the reason maybe you forget to turn on VPN to connect to Grid5000 from your local machine or just a network problem. You can check it and re-run with option `--setup-k8s-env`:
+
 ```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master --setup-k8s-env &>> results/test.log
+python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master --setup-k8s-env &>> results/test.log
 ```
 ## Docker images used in these experiments
 
-I use Docker images to pre-build the environment for FMKe services. All images are on Docker repository.
+I use Docker images to pre-build the environment for RiakKV and FMKe services. All images are on Docker repository.
 
 To deploy RiakKV cluster:
 
