@@ -47,7 +47,7 @@ parameters:
     # the number of FMKe application nodes
     n_fmke_app_per_dc: [1,2]
     # the number of AntidoteDB nodes
-    n_antidotedb_per_dc: 3
+    n_riakkv_per_dc: 3
 
 #############################################
 #                                           #
@@ -75,7 +75,9 @@ exp_env:
       update_prescription: 4
       update_prescription_medication: 4
       get_prescription: 4
-
+    
+    # the duration (minutes) to run the FMKe client to stress the system
+    test_duration: 40
     
     ### Information of kubernetes master and sites of RiakKV
 

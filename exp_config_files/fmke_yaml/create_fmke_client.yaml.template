@@ -35,7 +35,7 @@ spec:
           name: cluster-node-results
       nodeSelector:
         cluster_g5k: econome
-        service_g5k: fmke_client
+        service_g5k: fmke
       terminationGracePeriodSeconds: 10
       volumes:
       - hostPath:
