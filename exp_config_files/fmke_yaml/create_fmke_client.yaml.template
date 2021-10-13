@@ -5,8 +5,8 @@ metadata:
     app: fmke-client
   name: stress-database-from-econome
 spec:
-  parallelism: 2
-  completions: 2
+  parallelism: 1
+  completions: 1
   backoffLimit: 10
   template:
     metadata:
