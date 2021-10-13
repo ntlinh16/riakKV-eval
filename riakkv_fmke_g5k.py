@@ -800,6 +800,8 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
     def run(self):
         logger.debug('Parse and convert configs for G5K provisioner')
         self.configs = parse_config_file(self.args.config_file_path)
+        # Add the number of Riak KV DC as a parameter
+        self.configs['parameters']['n_dc'] = len(self.configs['exp_env']['clusters'])
 
         logger.debug('Normalize the parameter space')
         self.normalized_parameters = define_parameters(self.configs['parameters'])
@@ -810,7 +812,7 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
         logger.info('''Your largest topology:
                         number of sites: %s
                         n_riakkv_per_dc: %s
-                        n_fmke_client_per_dc: %s
+                        n_fmke_app_per_dc: %s
                         n_fmke_client_per_dc: %s ''' % (
             len(self.configs['exp_env']['clusters']),
             max(self.normalized_parameters['n_riakkv_per_dc']),
