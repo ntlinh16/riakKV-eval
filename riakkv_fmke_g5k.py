@@ -43,7 +43,7 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
 
         comb_dir = get_results(comb=comb,
                                hosts=results_nodes,
-                               remote_result_files=['/tmp/results/'],
+                               remote_result_files=['/tmp/results/*'],
                                local_result_dir=self.configs['exp_env']['results_dir'])
 
         with open(os.path.join(comb_dir, 'pop_time.txt'), 'w') as f:
@@ -53,11 +53,6 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
 
 
     def deploy_fmke_client(self, kube_namespace, comb):
-        t = 20   
-        logger.info('-----------------------------------------------------------------')
-        logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
-        sleep(t*60)
-
         logger.info('-----------------------------------------------------------------')
         logger.info('5. Starting deploying FMKe client')
         fmke_client_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
@@ -143,102 +138,6 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
             raise CancelCombException("Cannot wait until all FMKe client instances running completely")
 
         logger.info("Finish stressing RiakKV database")
-
-    def deploy_fmke_client_old(self, kube_namespace, comb):
-        t = 20 
-        logger.info('-----------------------------------------------------------------')
-        logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
-        sleep(t*60)
-
-        logger.info('-----------------------------------------------------------------')
-        logger.info('5. Starting deploying fmke client to stress the riakkv database')
-        fmke_client_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
-
-        logger.debug('Delete old k8s yaml files if exists')
-        for filename in os.listdir(fmke_client_k8s_dir):
-            if filename.startswith('create_fmke_client_') or filename.startswith('fmke_client_'):
-                if '.template' not in filename:
-                    try:
-                        os.remove(os.path.join(fmke_client_k8s_dir, filename))
-                    except OSError:
-                        logger.debug("Error while deleting file")
-
-        logger.debug('Create fmke_client folder on each fmke_client node')
-        configurator = k8s_resources_configurator()
-        exp_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                        label_selectors='service_g5k=fmke')
-        cmd = 'mkdir -p /tmp/fmke_client'
-        execute_cmd(cmd, exp_nodes)
-
-        logger.debug('Create fmke_client config files to stress database for each riakkv DC')
-        file_path = os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')
-
-        test_duration = self.configs['exp_env']['test_duration']
-        logger.info('test_duration = %s' % test_duration)
-
-        logger.debug('Create the new workload ratio')
-        workload = ",\n".join(["  {%s, %s}" % (key, val)
-                               for key, val in self.configs['exp_env']['operations'].items()])
-        operations = "{operations,[\n%s\n]}." % workload
-
-        fmke_list = configurator.get_k8s_resources(resource='pod',
-                                                   label_selectors='app=fmke',
-                                                   kube_namespace=kube_namespace)
-        logger.debug('Replace corresponding parameters')
-        for cluster in self.configs['exp_env']['clusters']:
-            fmke_IPs = list()
-            for fmke in fmke_list.items:
-                if cluster in fmke.metadata.name:
-                    fmke_IPs.append(fmke.status.pod_ip)
-            fmke_ports = [9090 for i in range(0, len(fmke_IPs))]
-            # Modify fmke_client config files with new values
-            with open(file_path) as f:
-                doc = f.read()
-                doc = doc.replace('["127.0.0.1"]', '%s' % fmke_IPs)
-                doc = doc.replace("[9090]", '%s' % fmke_ports)
-                doc = doc.replace("{concurrent, 16}.", "{concurrent, %s}." %
-                                  comb['concurrent_clients'])
-                doc = doc.replace("{duration, 3}.", "{duration, %s}." % test_duration)
-                doc = doc.replace("'", '"')
-                doc = re.sub(r"{operations.*", operations, doc, flags=re.S)
-            file_path2 = os.path.join(fmke_client_k8s_dir, 'fmke_client_%s.config' % cluster)
-            with open(file_path2, 'w') as f:
-                f.write(doc)
-
-            logger.debug(
-                'Upload fmke_client config files to kube_master to be used by kubectl to run fmke_client pods')
-            getput_file(hosts=exp_nodes, file_paths=[file_path2],
-                        dest_location='/tmp/fmke_client/', action='put')
-
-        logger.debug('Create create_fmke_client.yaml files to run job stress for each riakkv DC')
-        file_path = os.path.join(fmke_client_k8s_dir, 'create_fmke_client.yaml.template')
-        with open(file_path) as f:
-            doc = yaml.safe_load(f)
-        fmke_client_files = list()
-        for cluster in self.configs['exp_env']['clusters']:
-            doc['spec']['parallelism'] = comb['n_fmke_client_per_dc']
-            doc['spec']['completions'] = comb['n_fmke_client_per_dc']
-            doc['metadata']['name'] = 'fmke-client-%s' % cluster
-            doc['spec']['template']['spec']['containers'][0]['lifecycle']['postStart']['exec']['command'] = [
-                "cp", "/cluster_node/fmke_client_%s.config" % cluster, "/fmke_client/fmke_client.config"]
-            doc['spec']['template']['spec']['nodeSelector'] = {
-                'service_g5k': 'fmke', 'cluster_g5k': '%s' % cluster}
-            file_path = os.path.join(fmke_client_k8s_dir, 'create_fmke_client_%s.yaml' % cluster)
-            with open(file_path, 'w') as f:
-                yaml.safe_dump(doc, f)
-            fmke_client_files.append(file_path)
-
-        logger.info("Running fmke client instances on each DC")
-        logger.debug("Init configurator: k8s_resources_configurator")
-        configurator = k8s_resources_configurator()
-        configurator.deploy_k8s_resources(files=fmke_client_files, namespace=kube_namespace)
-
-        logger.info("Stressing database in %s minutes ....." % test_duration)
-        configurator.wait_k8s_resources(resource='job',
-                                        label_selectors="app=fmke-client",
-                                        timeout=(test_duration + 5)*60,
-                                        kube_namespace=kube_namespace)
-        logger.info("Finish stressing riakkv database")
 
     def deploy_fmke_app(self, kube_namespace, comb):
         logger.info('------------------------------------')
@@ -364,9 +263,13 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
                     pop_result = result[4] + "\n" + result[6]
                 if len(result) == 9:
                     pop_result = result[4] + "\n" + result[7]
+                t = 10
+                logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
+                sleep(t*60)
             else:
                 raise CancelCombException("Populating process ERROR")
             logger.debug("FMKe populator result: \n%s" % pop_result)
+
 
         logger.debug('Modify the populate_data file to populate prescriptions')
         with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml.template')) as f:
@@ -376,6 +279,7 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
             '-f --onlyprescriptions -p 1'] + fmke_IPs
         with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml'), 'w') as f:
             yaml.safe_dump(doc, f)
+        
 
         logger.info("Populating the FMKe benchmark data with prescriptions")
         configurator.deploy_k8s_resources(files=[os.path.join(fmke_k8s_dir, 'populate_data.yaml')],
@@ -398,9 +302,26 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
             logger.info('Last line of log: %s' % last_line)
             if 'Populated' not in last_line:
                 raise CancelCombException("Populating process ERROR")
+            t = 10
+            logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
+            sleep(t*60)
         logger.info('Finish populating data')
 
         return pop_result
+
+    def _calculate_ring_size(self, n_nodes):
+        # calculate the ring size base on the number of nodes in a DC
+        # this setting follows the recomandation of Riak KV here:
+        # https://docs.riak.com/riak/kv/latest/setup/planning/cluster-capacity/index.html#ring-size-number-of-partitions 
+        if n_nodes < 7:
+            return 64
+        elif n_nodes < 13:
+            return 128
+        elif n_nodes < 20:
+            return 512
+        elif n_nodes < 40:
+            return 1024
+        return 2048
 
     def deploy_riakkv(self, kube_namespace, comb):
         logger.info('--------------------------------------')
@@ -454,6 +375,7 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
         riakkv_pods = configurator.get_k8s_resources(resource="pod",
                                                      label_selectors="app=riakkv",
                                                      kube_namespace=kube_namespace)
+
         riak_master_ip = None
         riak_pod_names = list()
         for pod in riakkv_pods.items:
@@ -482,7 +404,10 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
         #                         {'pod_ips': ['10.244.5.33', '10.244.2.51', '10.244.1.38'],
         #                          'host_names': ['parasilo-26.nantes.grid5000.fr', 'parasilo-32.nantes.grid5000.fr'],
         #                          'pod_names': ['riakkv-parasilo-0', 'riakkv-parasilo-1', 'riakkv-parasilo-2']}
-        # 
+        #
+                
+        ring_size = self._calculate_ring_size(comb['n_riakkv_per_dc'])
+
         logger.info("Creating RiakKV ring(s)")
         for cluster, cluster_info in riakkv_sites.items():
             logger.info("On %s site:" % cluster)
@@ -493,6 +418,11 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
                     configurator.execute_command(pod_name=pod_name,
                                                 command="riak-admin cluster join riak@%s" % cluster_info['pod_ips'][0],
                                                 kube_namespace=kube_namespace)
+                    # reset ring_size
+                    if ring_size != 64:
+                        r = configurator.execute_command(pod_name=pod_name,
+                                                    command='''sed -i -e "s/## ring_size = 64/ring_size = %s/g" /etc/riak/riak.conf''' % ring_size,
+                                                    kube_namespace=kube_namespace)
                 logger.info("  --> Check RiakKV cluster plan")
                 configurator.execute_command(pod_name=cluster_info['pod_names'][0],
                                             command="riak-admin cluster plan",
@@ -514,6 +444,7 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
                         configurator.execute_command(pod_name=cluster_info['pod_names'][0],
                                                     command="riak-repl clustername %s" % cluster,
                                                     kube_namespace=kube_namespace) 
+                        
                         break
                     if count <= 0:
                         raise CancelCombException("Cannot create RiakKV ring on %s site" % cluster)
