@@ -13,4 +13,6 @@ spec:
         imagePullPolicy: IfNotPresent
         args:
       restartPolicy: Never
+      nodeSelector:
+        service_g5k: fmke
   backoffLimit: 10
