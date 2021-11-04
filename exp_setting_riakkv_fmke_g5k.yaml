@@ -44,8 +44,6 @@ parameters:
     ### configuration of topology on 1 site (or Grid5k cluster)
     # the number of FMKe client nodes
     n_fmke_client_per_dc: [0..3]
-    # the number of FMKe application nodes
-    n_fmke_app_per_dc: [1,2]
     # the number of AntidoteDB nodes
     n_riakkv_per_dc: 3
 
