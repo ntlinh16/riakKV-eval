@@ -9,7 +9,7 @@ This project runs on Python3 environment.
 
 The flow of this experiment follows [an experiment workflow with cloudal](https://github.com/ntlinh16/cloudal/blob/master/docs/technical_detail.md#an-experiment-workflow-with-cloudal).
 
-The `create_combs_queue()` function creates a list of combinations from the given parameters in the _exp_setting_riakkv_fmke_g5k_ file which are (1) the number of repetitions of each experiment; (2) the configuration of FMKe populator such as the number of  concurrent populator processes or the database type; (3) the number of concurrent clients connects to the database; (4) the topology (number of riakKV nodes, number of FMKe_app, number of FMKe_client)
+The `create_combs_queue()` function creates a list of combinations from the given parameters in the _exp_setting_riakkv_fmke_g5k.yaml_ file which are (1) the number of repetitions of each experiment; (2) the configuration of FMKe populator such as the number of  concurrent populator processes or the database type; (3) the number of concurrent clients connects to the database; (4) the topology which is the number of RiakKV nodes and thw number of FMKe client nodes)
 
 The `setup_env()` function (1) makes a reservation for the required infrastructure; and then (2) deploys a Kubernetes cluster to managed all RiakKV and FMKe services which are deployed by using Docker containers.
 
@@ -30,15 +30,15 @@ There are two types of config files to perform this experiment.
 #### Experiment environment setting file
 You need to clarify all the following information in `exp_setting_riakkv_fmke_g5k.yaml` file:
 
-* Infrastructure: the provided information in this part will be used to make a provisioning on nGrid5000 system. They include when and how long you want to provision nodes; the OS you want to deploy on reserved nodes.  The name of cluster and the number of nodes for each cluster you want to provision on Grid5k system will be declared in next part .
+* Infrastructure: the provided information in this part will be used to make a provisioning on Grid5000 system. They include when and how long you want to provision nodes; and the OS you want to deploy on reserved nodes.
 
 * Experiment Parameters: is a list of experiment parameters that represent different aspects of the system that you want to examine. Each parameter contains a list of possible values of that aspect. For example, I want to examine the effect of the number of concurrent clients that connect to an RiakKV database, so I define a parameter such as `concurrent_clients: [16, 32]`; and each experiment will be repeated 5 times (`iteration: [1..5]`) for a statistically significant results. And for different topologies of an RiakKV cluster I provide the number of nodes.
 
-* Experiment environment information: the path to experiment Kubernetes deployment files; the read/write ratio of the FMKe client workload; the topology of an RiakKV cluster.
+* Experiment environment information: the path to experiment Kubernetes deployment files; the read/write ratio of the FMKe client workload; the running workload duration; the name of the cluster of Grid5k that you want to deploy your RiakKV system.
 
 #### Experiment deployment files for Kubernetes
 
-In this experiment, I use Kubernetes deployment files to deploy and manage RiakKV cluster, and FMKe benchmark. Therefore, you need to provide these deployment files. I already provided the template files which work well with this experiment in [exp_config_files](https://github.com/ntlinh16/riakKV-eval/tree/main/exp_config_files) folder. If you do not require any special configurations, you do not have to modify these files.
+In this experiment, I use Kubernetes deployment (YAML) files to deploy and manage the RiakKV cluster as well as the FMKe benchmark. Therefore, you need to provide these deployment files. I already provided the template files which work well with this experiment in [exp_config_files](https://github.com/ntlinh16/riakKV-eval/tree/main/exp_config_files) folder. If you do not require any special configurations, you do not have to modify these files.
 
 ### 3. Run the experiment
 If you are running this experiment on your local machine, remember to run the VPN to [connect to Grid5000 system from outside](https://github.com/ntlinh16/cloudal/blob/master/docs/g5k_k8s_setting.md).
@@ -65,23 +65,24 @@ If the script is interrupted by unexpected reasons. You can re-run the experimen
 ```
 python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k &> results/test.log
 ```
-This command performs a new reservation and runs all the combinations left. Remember to check the `walltime` when re-running the experiments to avoid violence the charter of Grid5k.
+This command performs a new reservation (provision nodes and setting up the experiment environment again) and runs all the combinations left. Remember to check the `walltime` in the config file before re-running the experiments to avoid violence the charter of Grid5k.
 
 2. If your reserved nodes are still alive, you can give the OAR_JOB_IDs to the script:
 ```
-python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> results/test.log
+python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &>> results/test.log
 ```
 For example:
 ```
-python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k --no-deploy-os -j grenoble:2086482,rennes:1837521 --kube-master ecotype-9.nantes.grid5000.fr &>> results/test.log
+python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k -j grenoble:2086482,rennes:1837521 --no-deploy-os --kube-master ecotype-9.nantes.grid5000.fr &>> results/test.log
 ```
+* `--no-deploy-os`:  with this option, all your reserved nodes will not be redeployed again. Therefore, the old setups for the experiment environment are kept the same.
 
-3. If your script is interrupted after the step `Deploying Kubernetes cluster`, the reason maybe you forget to turn on VPN to connect to Grid5000 from your local machine or just a network problem. You can check it and re-run with option `--setup-k8s-env`:
+3. If your script is interrupted after the step `Deploying Kubernetes cluster`, the reason maybe you forget to turn on VPN to connect to Grid5000 from your local machine or just a network problem. You can check it, turn on the VPN and re-run with option `--setup-k8s-env`:
 
 ```
 python riakkv_fmke_g5k.py --system_config_file exp_setting_riakkv_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master --setup-k8s-env &>> results/test.log
 ```
-## Docker images used in these experiments
+## Docker images used in this project
 
 I use Docker images to pre-build the environment for RiakKV and FMKe services. All images are on Docker repository.
 

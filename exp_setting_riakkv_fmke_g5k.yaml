@@ -11,6 +11,7 @@ walltime: 3:00:00
 
 # the time when you want the nodes to be started.
 # the date format is "YYYY-MM-DD HH:MM:SS"
+# if you put it as null, the provisioning process starts immediately
 starttime: null
 
 # the OS image name (or environment name) that used to deploy OS on the reserved nodes on G5k system.
@@ -44,7 +45,7 @@ parameters:
     ### configuration of topology on 1 site (or Grid5k cluster)
     # the number of FMKe client nodes
     n_fmke_client_per_dc: [0..3]
-    # the number of AntidoteDB nodes
+    # the number of RiakKV nodes
     n_riakkv_per_dc: 3
 
 #############################################
@@ -55,14 +56,14 @@ parameters:
 exp_env:
     # the path to the results directory
     results_dir: riakkv-eval/results
-    # the path to the kubernetes yaml template files to deploy RiakKV cluster and the FMKe services
+    # the path to the kubernetes yaml template files to deploy RiakKV cluster and the FMKe benchmark services
     riakkv_yaml_path: riakkv-eval/exp_config_files/riakkv_yaml
     fmke_yaml_path: riakkv-eval/exp_config_files/fmke_yaml
 
     
     # The ratio of read and write of the FMKe workload
     # the following is the default setting, the sum of these ratio must be 100(%)
-    # This information replaces the corresponding values in the fmke_yaml/fmke_client.config.template file,the config file to run FMKe client
+    # This information replaces the corresponding values in the riakKV-eval/exp_config_files/fmke_yaml/fmke_client.config.template file,the config file to run FMKe client
     operations:
       get_pharmacy_prescriptions: 27
       get_prescription_medication: 27
