@@ -10,6 +10,8 @@ RUN apt-get -f install -y
 
 RUN sed -i "s|listener.http.internal = 127.0.0.1:8098|listener.http.internal = 0.0.0.0:8098|" /etc/riak/riak.conf
 RUN sed -i "s|listener.protobuf.internal = 127.0.0.1:8087|listener.protobuf.internal = 0.0.0.0:8087|" /etc/riak/riak.conf
+RUN echo "riak soft nofile 65536" >> /etc/security/limits.conf
+RUN echo "riak hard nofile 200000" >> /etc/security/limits.conf
 
 EXPOSE 8087 8098
 
