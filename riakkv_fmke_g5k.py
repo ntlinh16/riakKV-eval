@@ -8,7 +8,7 @@ from cloudal.utils import get_logger, execute_cmd, parse_config_file, getput_fil
 from cloudal.action import performing_actions_g5k
 from cloudal.provisioner import g5k_provisioner
 from cloudal.configurator import kubernetes_configurator, k8s_resources_configurator
-from cloudal.experimenter import create_combination_dir, create_paramsweeper, define_parameters, is_job_alive, get_results
+from cloudal.experimenter import create_paramsweeper, define_parameters, is_job_alive, get_results
 
 from execo_g5k import oardel
 from execo_engine import slugify
@@ -241,7 +241,7 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
         logger.info('Waiting for populating data without prescriptions')
         deploy_ok = configurator.wait_k8s_resources(resource='job',
                                                     label_selectors="app=fmke_pop",
-                                                    timeout=600,
+                                                    timeout=300,
                                                     kube_namespace=kube_namespace)
         if not deploy_ok:
             raise CancelCombException("Cannot wait until finishing populating data")
@@ -288,7 +288,7 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
         logger.info('Waiting for populating data without only prescriptions')
         configurator.wait_k8s_resources(resource='job',
                                         label_selectors="app=fmke_pop",
-                                        timeout=600,
+                                        timeout=300,
                                         kube_namespace=kube_namespace)
         logger.info('Checking if the populating process finished successfully or not')
         fmke_pop_pods = configurator.get_k8s_resources_name(resource='pod',
@@ -315,8 +315,10 @@ class FMKe_riakkv_g5k(performing_actions_g5k):
         # https://docs.riak.com/riak/kv/latest/setup/planning/cluster-capacity/index.html#ring-size-number-of-partitions 
         if n_nodes < 7:
             return 64
-        elif n_nodes < 13:
+        elif n_nodes < 10:
             return 128
+        elif n_nodes < 14:
+            return 256
         elif n_nodes < 20:
             return 512
         elif n_nodes < 40:
