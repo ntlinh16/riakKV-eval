@@ -99,7 +99,7 @@ The throughput trend is downwards at the beginning and then becomes stable. Over
 Riak KV provide consistent latency values for most operations except `create_prescription`, `get_pharmacy_prescriptions` and `get_processed_pharmacy_prescriptions`.
 
 ### 2. System scalability evaluation
-We write [two scripts](https://github.com/ntlinh16/riakKV-eval/tree/main/plot_chart) to process the data and plot the results for the scalability evaluation.
+We write [two scripts](https://github.com/ntlinh16/riakKV-eval/tree/main/plot_chart) to process the data and plot the results for the system scalability evaluation.
 
 For each combination folder in result directory, the `process.py` calculates the mean throughput and latency of the system starting from the stable point. This point is identified by smoothing the number of requests over time data, and calculating the rate of change in the value. The final result is exported to a csv file in the same directory. The `process.py` script accepts the path to the experiment directory as shown below:
 ```
